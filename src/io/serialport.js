@@ -14,7 +14,9 @@ class Serialport extends JSONRPC {
     constructor (runtime, deviceId, peripheralOptions, connectCallback = null, resetCallback = null) {
         super();
 
-        this._socket = runtime.getScratchLinkSocket('SERIALPORT');
+        console.log("LMP-Debug: Serialport!");
+        
+        this._socket = runtime.getScratchLinkSocket('WSERIALPORT');
         this._socket.setOnOpen(this.requestPeripheral.bind(this));
         this._socket.setOnClose(this.handleDisconnectError.bind(this));
         this._socket.setOnError(this._handleRequestError.bind(this));
@@ -40,6 +42,8 @@ class Serialport extends JSONRPC {
      * If the web socket is not yet open, request when the socket promise resolves.
      */
     requestPeripheral () {
+        console.log("LMP-Debug: requestPeripheral!");
+
         this._availablePeripherals = {};
         if (this._discoverTimeoutID) {
             window.clearTimeout(this._discoverTimeoutID);
@@ -58,6 +62,8 @@ class Serialport extends JSONRPC {
      * @param {object} config - communacation configuration of peripheral
      */
     connectPeripheral (id, config) {
+        console.log("LMP-Debug: connectPeripheral!");
+
         this.sendRemoteRequest('connect', {peripheralId: id, peripheralConfig: config})
             .then(() => {
                 this._connected = true;
@@ -114,6 +120,7 @@ class Serialport extends JSONRPC {
      * @return {Promise} - a promise from the remote read request.
      */
     read (onMessage = null) {
+        debugger;
         if (onMessage) {
             this._onMessage = onMessage;
         }
@@ -130,6 +137,8 @@ class Serialport extends JSONRPC {
      * @return {Promise} - a promise from the remote send request.
      */
     write (message, encoding = null) {
+        console.log("LMP-Debug: write->"+message);
+        // debugger;
         const params = {message};
         if (encoding) {
             params.encoding = encoding;
@@ -148,6 +157,8 @@ class Serialport extends JSONRPC {
      * @return {Promise} - a promise from the remote send request.
      */
     upload (message, config, encoding = null) {
+        console.log("LMP-Debug: upload!");
+
         config.library = this._runtime.getCurrentDeviceExtensionLibrary();
         const params = {message, config};
         if (encoding) {
@@ -165,6 +176,8 @@ class Serialport extends JSONRPC {
      * @return {Promise} - a promise from the remote send request.
      */
     uploadFirmware (config) {
+        console.log("LMP-Debug: uploadFirmware!");
+
         return this.sendRemoteRequest('uploadFirmware', config)
             .catch(e => {
                 this.handleDisconnectError(e);
@@ -189,6 +202,7 @@ class Serialport extends JSONRPC {
      * @return {object} - optional return value.
      */
     didReceiveCall (method, params) {
+        console.log("LMP-Debug: didRecieveCall->"+method);
         switch (method) {
         case 'didDiscoverPeripheral':
             this._availablePeripherals[params.peripheralId] = params;
@@ -284,6 +298,7 @@ class Serialport extends JSONRPC {
     }
 
     _handleRequestError (/* e */) {
+        alert("LMP-Debug: RequestError");
         this._runtime.emit(this._runtime.constructor.PERIPHERAL_REQUEST_ERROR, {
             message: `Scratch lost connection to`,
             deviceId: this._deviceId
@@ -291,6 +306,7 @@ class Serialport extends JSONRPC {
     }
 
     _handleDiscoverTimeout () {
+        alert("LMP-Debug: DiscoverTimeout");
         if (this._discoverTimeoutID) {
             window.clearTimeout(this._discoverTimeoutID);
         }

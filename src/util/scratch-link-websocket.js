@@ -11,6 +11,445 @@
  * - sendMessage(msgObj)
  * - isOpen()
  */
+  
+// LMP : Some annoying issues
+// serial-handler.js
+// npm install serialport-binding-webserialapi
+// npm install @serialport/stream 
+//import SerialPort from '@serialport/stream';
+//import WSABinding from 'serialport-binding-webserialapi';
+//import { ReadlineParser } from '@serialport/parser-readline';
+
+
+/**
+ * Web Serial UART Handler Class
+ * Provides interface for serial communication with callbacks and line buffering
+ */
+class WebSerialUART {
+    constructor(options = {}) {
+        this.port = null;
+        this.reader = null;
+        this.writer = null;
+        this.readBuffer = '';
+        this.isConnected = false;
+        this.isReading = false;
+        
+        // Default options
+        this.options = {
+            baudRate: 9600,
+            dataBits: 8,
+            stopBits: 1,
+            parity: 'none',
+            flowControl: 'none',
+            bufferSize: 255,
+            ...options
+        };
+        
+        // Callbacks
+        this.onOpen = null;
+        this.onClosed = null;
+        this.onDisconnect = null;
+        this.onDataReady = null;
+        this.onError = null;
+    }
+    
+    /**
+     * Check if Web Serial API is supported
+     */
+    static isSupported() {
+        return 'serial' in navigator;
+    }
+    
+    /**
+     * Request and connect to a serial port
+     */
+    async connect() {
+        try {
+            if (!WebSerialUART.isSupported()) {
+                throw new Error('Web Serial API not supported');
+            }
+            
+            // Request port from user
+            this.port = await navigator.serial.requestPort();
+            
+            // Open the port with specified options
+            await this.port.open({
+                baudRate: this.options.baudRate,
+                dataBits: this.options.dataBits,
+                stopBits: this.options.stopBits,
+                parity: this.options.parity,
+                flowControl: this.options.flowControl
+            });
+            
+            this.isConnected = true;
+            this.writer = this.port.writable.getWriter();
+            
+            // Start reading
+            this.startReading();
+            
+            // Call onOpen callback
+            if (this.onOpen) {
+                this.onOpen();
+            }
+            
+        } catch (error) {
+            if (this.onError) {
+                this.onError(error);
+            }
+            throw error;
+        }
+    }
+    
+    /**
+     * Connect to a previously paired port
+     */
+    async connectToPairedPort(port) {
+        try {
+            this.port = port;
+            
+            await this.port.open({
+                baudRate: this.options.baudRate,
+                dataBits: this.options.dataBits,
+                stopBits: this.options.stopBits,
+                parity: this.options.parity,
+                flowControl: this.options.flowControl
+            });
+            
+            this.isConnected = true;
+            this.writer = this.port.writable.getWriter();
+            
+            this.startReading();
+            
+            if (this.onOpen) {
+                this.onOpen();
+            }
+            
+        } catch (error) {
+            if (this.onError) {
+                this.onError(error);
+            }
+            throw error;
+        }
+    }
+    
+    /**
+     * Get list of previously paired ports
+     */
+    static async getPairedPorts() {
+        if (!WebSerialUART.isSupported()) {
+            return [];
+        }
+        return await navigator.serial.getPorts();
+    }
+    
+    /**
+     * Start reading from the serial port
+     */
+    async startReading() {
+        if (!this.port || !this.isConnected || this.isReading) {
+            return;
+        }
+        
+        this.isReading = true;
+        this.reader = this.port.readable.getReader();
+        
+        try {
+            while (this.isReading && this.isConnected) {
+                const { value, done } = await this.reader.read();
+                
+                if (done) {
+                    break;
+                }
+                
+                // Convert Uint8Array to string
+                const chunk = new TextDecoder().decode(value);
+                this.readBuffer += chunk;
+                
+                // Process complete lines
+                this.processBuffer();
+            }
+        } catch (error) {
+            if (this.isConnected) {
+                if (this.onError) {
+                    this.onError(error);
+                }
+                if (this.onDisconnect) {
+                    this.onDisconnect();
+                }
+            }
+        } finally {
+            if (this.reader) {
+                this.reader.releaseLock();
+                this.reader = null;
+            }
+            this.isReading = false;
+        }
+    }
+    
+    /**
+     * Process the read buffer and extract complete lines
+     */
+    processBuffer() {
+        let lineEndIndex;
+        
+        while ((lineEndIndex = this.findLineEnd()) !== -1) {
+            // Extract complete line (without line ending)
+            const line = this.readBuffer.substring(0, lineEndIndex);
+            
+            // Remove processed data from buffer (including line ending)
+            const nextLineStart = this.skipLineEnding(lineEndIndex);
+            this.readBuffer = this.readBuffer.substring(nextLineStart);
+            
+            // Call onDataReady callback with complete line
+            if (this.onDataReady && line.length > 0) {
+                this.onDataReady(line);
+            }
+        }
+    }
+    
+    /**
+     * Find the index of line ending (CR, LF, or CRLF)
+     */
+    findLineEnd() {
+        const crIndex = this.readBuffer.indexOf('\r');
+        const lfIndex = this.readBuffer.indexOf('\n');
+        
+        if (crIndex === -1 && lfIndex === -1) {
+            return -1;
+        }
+        
+        if (crIndex === -1) return lfIndex;
+        if (lfIndex === -1) return crIndex;
+        
+        return Math.min(crIndex, lfIndex);
+    }
+    
+    /**
+     * Skip line ending characters and return next character position
+     */
+    skipLineEnding(lineEndIndex) {
+        if (lineEndIndex >= this.readBuffer.length) {
+            return this.readBuffer.length;
+        }
+        
+        const char = this.readBuffer[lineEndIndex];
+        
+        if (char === '\r') {
+            // Check for CRLF
+            if (lineEndIndex + 1 < this.readBuffer.length && 
+                this.readBuffer[lineEndIndex + 1] === '\n') {
+                return lineEndIndex + 2;
+            }
+            return lineEndIndex + 1;
+        } else if (char === '\n') {
+            return lineEndIndex + 1;
+        }
+        
+        return lineEndIndex + 1;
+    }
+    
+    /**
+     * Write a message to the serial port
+     */
+    async write(message) {
+        if (!this.writer || !this.isConnected) {
+            throw new Error('Not connected to serial port');
+        }
+        
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            await this.writer.write(data);
+        } catch (error) {
+            if (this.onError) {
+                this.onError(error);
+            }
+            throw error;
+        }
+    }
+    
+    /**
+     * Write a line (message + line ending)
+     */
+    async writeLine(message, lineEnding = '\n') {
+        return await this.write(message + lineEnding);
+    }
+    
+    /**
+     * Disconnect from the serial port
+     */
+    async disconnect() {
+        this.isReading = false;
+        this.isConnected = false;
+        
+        try {
+            if (this.reader) {
+                await this.reader.cancel();
+                this.reader.releaseLock();
+                this.reader = null;
+            }
+            
+            if (this.writer) {
+                this.writer.releaseLock();
+                this.writer = null;
+            }
+            
+            if (this.port) {
+                await this.port.close();
+                this.port = null;
+            }
+            
+            if (this.onClosed) {
+                this.onClosed();
+            }
+            
+        } catch (error) {
+            if (this.onError) {
+                this.onError(error);
+            }
+        }
+    }
+    
+    /**
+     * Get connection status
+     */
+    getConnectionStatus() {
+        return {
+            isConnected: this.isConnected,
+            isReading: this.isReading,
+            hasPort: !!this.port,
+            hasReader: !!this.reader,
+            hasWriter: !!this.writer
+        };
+    }
+    
+    /**
+     * Clear the read buffer
+     */
+    clearBuffer() {
+        this.readBuffer = '';
+    }
+    
+    /**
+     * Get current buffer content
+     */
+    getBuffer() {
+        return this.readBuffer;
+    }
+}
+
+/**
+ * Serial Port Manager - Helper class for managing multiple connections
+ */
+class SerialPortManager {
+    constructor() {
+        this.connections = new Map();
+    }
+    
+    /**
+     * Create a new UART connection with a unique ID
+     */
+    createConnection(id, options = {}) {
+        if (this.connections.has(id)) {
+            throw new Error(`Connection with ID '${id}' already exists`);
+        }
+        
+        const uart = new WebSerialUART(options);
+        this.connections.set(id, uart);
+        
+        // Set up disconnect handler to clean up
+        const originalOnClosed = uart.onClosed;
+        uart.onClosed = () => {
+            this.connections.delete(id);
+            if (originalOnClosed) {
+                originalOnClosed();
+            }
+        };
+        
+        return uart;
+    }
+    
+    /**
+     * Get connection by ID
+     */
+    getConnection(id) {
+        return this.connections.get(id);
+    }
+    
+    /**
+     * Remove connection by ID
+     */
+    async removeConnection(id) {
+        const connection = this.connections.get(id);
+        if (connection) {
+            await connection.disconnect();
+            this.connections.delete(id);
+        }
+    }
+    
+    /**
+     * Get all connection IDs
+     */
+    getConnectionIds() {
+        return Array.from(this.connections.keys());
+    }
+    
+    /**
+     * Disconnect all connections
+     */
+    async disconnectAll() {
+        const promises = [];
+        for (const connection of this.connections.values()) {
+            promises.push(connection.disconnect());
+        }
+        await Promise.all(promises);
+        this.connections.clear();
+    }
+}
+
+// Usage example:
+/*
+// Create UART instance
+const uart = new WebSerialUART({
+    baudRate: 115200,
+    dataBits: 8,
+    stopBits: 1,
+    parity: 'none'
+});
+
+// Set up callbacks
+uart.onOpen = () => {
+    console.log('Serial port opened');
+};
+
+uart.onClosed = () => {
+    console.log('Serial port closed');
+};
+
+uart.onDisconnect = () => {
+    console.log('Serial port disconnected');
+};
+
+uart.onDataReady = (line) => {
+    console.log('Received line:', line);
+};
+
+uart.onError = (error) => {
+    console.error('Serial error:', error);
+};
+
+// Connect to port
+try {
+    await uart.connect();
+    
+    // Send some data
+    await uart.writeLine('Hello UART!');
+    
+} catch (error) {
+    console.error('Connection failed:', error);
+}
+*/
+
 class ScratchLinkWebSocket {
     constructor (type) {
         this._type = type;
@@ -20,6 +459,7 @@ class ScratchLinkWebSocket {
         this._handleMessage = null;
 
         this._ws = null;
+        this.wuart = null;
     }
 
     open () {
@@ -33,19 +473,42 @@ class ScratchLinkWebSocket {
         case 'SERIALPORT':
             this._ws = new WebSocket('ws://127.0.0.1:20111/openblock/serialport');
             break;
+        case 'WSERIALPORT':
+             console.log("LMP-Debug: webuart: Open!");
+             try {
+                // Create UART instance
+                this.wuart = new WebSerialUART({
+                    baudRate: 115200,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none'
+                });
+
+                if (this._onOpen) this._onOpen();
+             }catch (err) {
+                console.error('There was an error connecting to the serial port:', err);
+                throw new Error(`Unknown OpenblockLink art Type: ${this._type}`);
+            }
+            break;
         default:
             throw new Error(`Unknown OpenblockLink socket Type: ${this._type}`);
         }
 
-        if (this._onOpen && this._onClose && this._onError && this._handleMessage) {
-            this._ws.onopen = this._onOpen;
-            this._ws.onclose = this._onClose;
-            this._ws.onerror = this._onError;
+        if( this.wuart ) {
+            
+            this.wuart.onDataReady = this._handleMessage;
         } else {
-            throw new Error('Must set open, close, message and error handlers before calling open on the socket');
-        }
 
-        this._ws.onmessage = this._onMessage.bind(this);
+            if (this._onOpen && this._onClose && this._onError && this._handleMessage) {
+                this._ws.onopen = this._onOpen;
+                this._ws.onclose = this._onClose;
+                this._ws.onerror = this._onError;
+            } else {
+                throw new Error('Must set open, close, message and error handlers before calling open on the socket');
+            }
+            this._ws.onmessage = this._onMessage.bind(this);
+        }
+        
     }
 
     close () {
@@ -55,7 +518,84 @@ class ScratchLinkWebSocket {
 
     sendMessage (message) {
         const messageText = JSON.stringify(message);
-        this._ws.send(messageText);
+        
+        console.log("LMP-Debug: sendMessage->"+messageText);
+        
+        if(typeof message.method === 'string' && message.method === 'discover') {
+            // json.method = true; // _handleRequest = moethod, _handleResponse=nope
+//            let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+//            this._handleMessage(json);
+
+//            let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
+//            this._handleMessage(json2);
+
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 500);
+
+            setTimeout(() => {
+                let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
+                this._handleMessage(json2);
+            }, 1000);
+
+            setTimeout(() => {
+                let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x001,"name": "EPS32C3-144","rssi": -70}} ;
+                this._handleMessage(json2);
+            }, 2000);
+
+        }
+        debugger;
+        if( this.wuart ) 
+        {
+        }
+        else {
+            this._ws.send(messageText);
+        }
+
+        if(typeof message.method === 'string' && message.method === 'connect') {
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 500);
+        }
+
+        if(typeof message.method === 'string' && message.method === 'read') {
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 500);
+        }
+
+        if(typeof message.method === 'string' && message.method === 'write') {
+            const decodedString = atob(message.params.message);
+            console.log(decodedString);
+
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 500);
+        }
+
+        // Upload program to the board over uart
+        if(typeof message.method === 'string' && message.method === 'upload') {
+            const decodedString = atob(message.params.message);
+            console.log(decodedString);
+
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 500);
+
+            setTimeout(() => {
+                let json2 =  {"jsonrpc": "2.0", "method": "uploadSuccess", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
+                this._handleMessage(json2);
+            }, 1000);
+
+
+        }
+
+
     }
 
     setOnOpen (fn) {
@@ -71,6 +611,7 @@ class ScratchLinkWebSocket {
     }
 
     setHandleMessage (fn) {
+        console.log("LMP-Debug: setHandleMessage->"+fn);
         this._handleMessage = fn;
     }
 
