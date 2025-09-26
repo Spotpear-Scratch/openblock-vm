@@ -10,7 +10,7 @@ const CommonPeripheral = require('../common/common-peripheral');
 * @readonly
 */
 const PNPID_LIST = [
-    'USB\\VID_0D28&PID_0204'
+    'USB\\VID_303A&PID_1001'
 ];
 
 /**
@@ -41,26 +41,6 @@ const Key = {
     B: 'b'
 };
 
-const Gestrue = {
-    Shake: 'shake',
-    Up: 'up',
-    Down: 'down',
-    Left: 'left',
-    Right: 'right',
-    Faceup: 'faceup',
-    Facedown: 'facedown',
-    Freefall: 'freefall',
-    G3: '3g',
-    G6: '6g',
-    G8: '8g'
-};
-
-const Axis = {
-    X: 'x',
-    Y: 'y',
-    Z: 'z'
-};
-
 const Pins = {
     P0: '0',
     P1: '1',
@@ -68,17 +48,6 @@ const Pins = {
     P3: '3',
     P4: '4',
     P5: '5',
-    P6: '6',
-    P7: '7',
-    P8: '8',
-    P9: '9',
-    P10: '10',
-    P11: '11',
-    P12: '12',
-    P13: '13',
-    P14: '14',
-    P15: '15',
-    P16: '16'
 };
 
 const Level = {
@@ -87,11 +56,11 @@ const Level = {
 };
 
 /**
- * Manage communication with a Microbit peripheral over a OpenBlock Link client socket.
+ * Manage communication with a spotpear peripheral over a OpenBlock Link client socket.
  */
 class SpotPear extends CommonPeripheral{
     /**
-     * Construct a Microbit communication object.
+     * Construct a spotpear communication object.
      * @param {Runtime} runtime - the OpenBlock runtime
      * @param {string} deviceId - the id of the deivce
      * @param {string} originalDeviceId - the original id of the peripheral, like xxx_arduinoUno
@@ -102,7 +71,7 @@ class SpotPear extends CommonPeripheral{
 }
 
 /**
- * OpenBlock blocks to interact with a Microbit peripheral.
+ * OpenBlock blocks to interact with a spotpear peripheral.
  */
 class OpenBlockSpotpearDevice {
     /**
@@ -191,116 +160,6 @@ class OpenBlockSpotpearDevice {
         ];
     }
 
-    get GESTRUES_MENU () {
-        return [
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.shaken',
-                    default: 'shaken',
-                    description: 'label for shaken gestrue'
-                }),
-                value: Gestrue.Shake
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.tiltedUpward',
-                    default: 'tilted upward',
-                    description: 'label for tilted upward gestrue'
-                }),
-                value: Gestrue.Up
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.tiltedDownward',
-                    default: 'tilted downward',
-                    description: 'label for tilted downward gestrue'
-                }),
-                value: Gestrue.Down
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.tiltedLeftward',
-                    default: 'tilted leftward',
-                    description: 'label for tilted leftward gestrue'
-                }),
-                value: Gestrue.Left
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.tiltedRightward',
-                    default: 'tilted rightward',
-                    description: 'label for tilted rightward gestrue'
-                }),
-                value: Gestrue.Right
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.faceUp',
-                    default: 'face up',
-                    description: 'label for face up gestrue'
-                }),
-                value: Gestrue.Faceup
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.faceDown',
-                    default: 'face down',
-                    description: 'label for face down gestrue'
-                }),
-                value: Gestrue.Facedown
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.gestruesMenu.freefall',
-                    default: 'freefall',
-                    description: 'label for freefall gestrue'
-                }),
-                value: Gestrue.Freefall
-            },
-            {
-                text: '3g',
-                value: Gestrue.G3
-            },
-            {
-                text: '6g',
-                value: Gestrue.G6
-            },
-            {
-                text: '8g',
-                value: Gestrue.G8
-            }
-        ];
-    }
-
-    get AXIS_MENU () {
-        return [
-            {
-                text: formatMessage({
-                    id: 'spotpear.axisMenu.xAxis',
-                    default: 'x-axis',
-                    description: 'label for x axis'
-                }),
-                value: Axis.X
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.axisMenu.yAxis',
-                    default: 'y-axis',
-                    description: 'label for y axis'
-                }),
-                value: Axis.Y
-            },
-            {
-                text: formatMessage({
-                    id: 'spotpear.axisMenu.zAxis',
-                    default: 'z-axis',
-                    description: 'label for z axis'
-                }),
-                value: Axis.Z
-            }
-        ];
-    }
-
     get PINS_MENU () {
         return [
             {
@@ -323,54 +182,6 @@ class OpenBlockSpotpearDevice {
                 text: 'P4',
                 value: Pins.P4
             },
-            {
-                text: 'P5',
-                value: Pins.P5
-            },
-            {
-                text: 'P6',
-                value: Pins.P6
-            },
-            {
-                text: 'P7',
-                value: Pins.P7
-            },
-            {
-                text: 'P8',
-                value: Pins.P8
-            },
-            {
-                text: 'P9',
-                value: Pins.P9
-            },
-            {
-                text: 'P10',
-                value: Pins.P10
-            },
-            {
-                text: 'P11',
-                value: Pins.P11
-            },
-            {
-                text: 'P12',
-                value: Pins.P12
-            },
-            {
-                text: 'P13',
-                value: Pins.P13
-            },
-            {
-                text: 'P14',
-                value: Pins.P14
-            },
-            {
-                text: 'P15',
-                value: Pins.P15
-            },
-            {
-                text: 'P16',
-                value: Pins.P16
-            }
 
         ];
     }
@@ -396,52 +207,6 @@ class OpenBlockSpotpearDevice {
         ];
     }
 
-    get ANALOG_PINS_MENU () {
-        return [
-            {
-                text: 'P0',
-                value: Pins.P0
-            },
-            {
-                text: 'P1',
-                value: Pins.P1
-            },
-            {
-                text: 'P2',
-                value: Pins.P2
-            },
-            {
-                text: 'P3',
-                value: Pins.P3
-            },
-            {
-                text: 'P4',
-                value: Pins.P4
-            },
-            {
-                text: 'P10',
-                value: Pins.P10
-            }
-        ];
-    }
-
-    get TOUCH_PINS_MENU () {
-        return [
-            {
-                text: 'P0',
-                value: Pins.P0
-            },
-            {
-                text: 'P1',
-                value: Pins.P1
-            },
-            {
-                text: 'P2',
-                value: Pins.P2
-            }
-        ];
-    }
-
     get CHANNEL_MENU () {
         const channel = [];
 
@@ -456,7 +221,7 @@ class OpenBlockSpotpearDevice {
     }
 
     /**
-     * Construct a set of Microbit blocks.
+     * Construct a set of spotpear blocks.
      * @param {Runtime} runtime - the OpenBlock runtime.
      * @param {string} originalDeviceId - the original id of the peripheral, like xxx_arduinoUno
      */
@@ -467,7 +232,7 @@ class OpenBlockSpotpearDevice {
          */
         this.runtime = runtime;
 
-        // Create a new Microbit peripheral instance
+        // Create a new spotpear peripheral instance
         this._peripheral = new SpotPear(this.runtime, this.DEVICE_ID, originalDeviceId);
     }
 
@@ -480,7 +245,7 @@ class OpenBlockSpotpearDevice {
             name: formatMessage({
                 id: 'spotpear.category.pins',
                 default: 'Pins',
-                description: 'The name of the microbit device pin category'
+                description: 'The name of the spotpear device pin category'
             }),
             color1: '#4C97FF',
             color2: '#3373CC',
@@ -492,7 +257,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.pins.setDigitalOutput',
                         default: 'set digital pin [PIN] out [LEVEL]',
-                        description: 'microbit set digital pin out'
+                        description: 'spotpear set digital pin out'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -513,7 +278,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.pins.setPwmOutput',
                         default: 'set pwm pin [PIN] out [OUT]',
-                        description: 'microbit set pwm pin out'
+                        description: 'spotpear set pwm pin out'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -534,7 +299,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.pins.readDigitalPin',
                         default: 'read digital pin [PIN]',
-                        description: 'microbit read digital pin'
+                        description: 'spotpear read digital pin'
                     }),
                     blockType: BlockType.BOOLEAN,
                     arguments: {
@@ -545,29 +310,13 @@ class OpenBlockSpotpearDevice {
                         }
                     }
                 },
-                {
-                    opcode: 'readAnalogPin',
-                    text: formatMessage({
-                        id: 'spotpear.pins.readAnalogPin',
-                        default: 'read analog pin [PIN]',
-                        description: 'microbit read analog pin'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    arguments: {
-                        PIN: {
-                            type: ArgumentType.STRING,
-                            menu: 'analogPins',
-                            defaultValue: Pins.P0
-                        }
-                    }
-                },
                 '---',
                 {
                     opcode: 'pinTouched',
                     text: formatMessage({
                         id: 'spotpear.pins.pinIsTouched',
                         default: 'pin [PIN] is touched',
-                        description: 'microbit pin is touched'
+                        description: 'spotpear pin is touched'
                     }),
                     blockType: BlockType.REPORTER,
                     arguments: {
@@ -587,12 +336,6 @@ class OpenBlockSpotpearDevice {
                     acceptReporters: true,
                     items: this.LEVEL_MENU
                 },
-                analogPins: {
-                    items: this.ANALOG_PINS_MENU
-                },
-                touchPins: {
-                    items: this.TOUCH_PINS_MENU
-                }
             }
         },
         {
@@ -600,7 +343,7 @@ class OpenBlockSpotpearDevice {
             name: formatMessage({
                 id: 'spotpear.category.display',
                 default: 'Display',
-                description: 'The name of the microbit device display category'
+                description: 'The name of the spotpear device display category'
             }),
             color1: '#9966FF',
             color2: '#774DCB',
@@ -611,7 +354,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.display.showImage',
                         default: 'show image [VALUE]',
-                        description: 'microbit show image'
+                        description: 'spotpear show image'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -626,7 +369,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.display.showImageUntil',
                         default: 'show image [VALUE] for [TIME] secs',
-                        description: 'microbit show image for some times'
+                        description: 'spotpear show image for some times'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -645,7 +388,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.display.show',
                         default: 'show [TEXT]',
-                        description: 'microbit show'
+                        description: 'spotpear show'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -660,7 +403,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.display.showUntilScrollDone',
                         default: 'show [TEXT] until scroll done',
-                        description: 'microbit show until scroll done'
+                        description: 'spotpear show until scroll done'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -676,59 +419,11 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.display.clearDisplay',
                         default: 'clear screen',
-                        description: 'microbit clear display'
+                        description: 'spotpear clear display'
                     }),
                     blockType: BlockType.COMMAND
                 },
                 '---',
-                {
-                    opcode: 'lightPixelAt',
-                    text: formatMessage({
-                        id: 'spotpear.display.lightPixelAt',
-                        default: 'light [STATE] at the x: [X] axis, y: [Y] axis',
-                        description: 'microbit light pixel at'
-                    }),
-                    blockType: BlockType.COMMAND,
-                    arguments: {
-                        STATE: {
-                            type: ArgumentType.STRING,
-                            menu: 'ledState',
-                            defaultValue: LedState.On
-                        },
-                        X: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '0'
-                        },
-                        Y: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '0'
-                        }
-                    }
-                },
-                {
-                    opcode: 'showOnPiexlbrightness',
-                    text: formatMessage({
-                        id: 'spotpear.display.showOnPiexlbrightness',
-                        default: 'show on the x: [X] axis, y: [Y] axis with brightness [BRT]',
-                        description: 'microbit show on piexl brightness'
-                    }),
-                    blockType: BlockType.COMMAND,
-                    arguments: {
-                        X: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '0'
-                        },
-                        Y: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '0'
-                        },
-                        BRT: {
-                            type: ArgumentType.STRING,
-                            menu: 'ledBrightness',
-                            defaultValue: '9'
-                        }
-                    }
-                }
             ],
             menus: {
                 ledState: {
@@ -745,7 +440,7 @@ class OpenBlockSpotpearDevice {
             name: formatMessage({
                 id: 'spotpear.category.sensor',
                 default: 'Sensor',
-                description: 'The name of the microbit device sensor category'
+                description: 'The name of the spotpear device sensor category'
             }),
             color1: '#4CBFE6',
             color2: '#2E8EB8',
@@ -757,7 +452,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.sensor.buttonIsPressed',
                         default: '[KEY] button is pressed?',
-                        description: 'wether microbit button is pressed'
+                        description: 'wether spotpear button is pressed'
                     }),
                     blockType: BlockType.BOOLEAN,
                     arguments: {
@@ -768,113 +463,11 @@ class OpenBlockSpotpearDevice {
                         }
                     }
                 },
-                '---',
-                {
-                    opcode: 'gestureIsX',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.gestureIsX',
-                        default: 'gestrue is [STA]?',
-                        description: 'microbit gestrue is XXX'
-                    }),
-                    blockType: BlockType.BOOLEAN,
-                    arguments: {
-                        STA: {
-                            type: ArgumentType.STRING,
-                            menu: 'gestrues',
-                            defaultValue: Gestrue.Shake
-                        }
-                    }
-                },
-                {
-                    opcode: 'axisAcceleration',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.axisAcceleration',
-                        default: '[AXIS] axis acceleration',
-                        description: 'microbit axis acceleration'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    arguments: {
-                        AXIS: {
-                            type: ArgumentType.STRING,
-                            menu: 'axis',
-                            defaultValue: Axis.X
-                        }
-                    }
-                },
-                '---',
-                {
-                    opcode: 'compassAngle',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.compassAngle',
-                        default: 'compass angle',
-                        description: 'microbit compass angle'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true
-                },
-                {
-                    opcode: 'compassMagneticDensity',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.compassMagneticDensity',
-                        default: 'compass magnetic density',
-                        description: 'microbit compass magnetic density'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true
-                },
-                {
-                    opcode: 'calibrateCompass',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.calibrateCompass',
-                        default: 'calibrate compass',
-                        description: 'microbit calibrate compass'
-                    }),
-                    blockType: BlockType.COMMAND
-                },
-                '---',
-                {
-                    opcode: 'lightLevel',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.lightLevel',
-                        default: 'light level',
-                        description: 'microbit light level'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true
-                },
-                '---',
-                {
-                    opcode: 'temperature',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.temperature',
-                        default: 'temperature',
-                        description: 'microbit temperature'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true
-                },
-                '---',
-                {
-                    opcode: 'runningTime',
-                    text: formatMessage({
-                        id: 'spotpear.sensor.runningTime',
-                        default: 'running time',
-                        description: 'microbit running time'
-                    }),
-                    blockType: BlockType.REPORTER,
-                    disableMonitor: true
-                }
             ],
             menus: {
                 keys: {
                     items: this.KEYS_MENU
                 },
-                gestrues: {
-                    items: this.GESTRUES_MENU
-                },
-                axis: {
-                    items: this.AXIS_MENU
-                }
             }
         },
         {
@@ -882,7 +475,7 @@ class OpenBlockSpotpearDevice {
             name: formatMessage({
                 id: 'spotpear.category.wireless',
                 default: 'Wireless',
-                description: 'The name of the microbit device wireless category'
+                description: 'The name of the spotpear device wireless category'
             }),
             color1: '#D65CD6',
             color2: '#BD42BD',
@@ -894,7 +487,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.openWirelessCommunication',
                         default: 'open wireless communication',
-                        description: 'microbit open wireless communication'
+                        description: 'spotpear open wireless communication'
                     }),
                     blockType: BlockType.COMMAND
                 },
@@ -903,7 +496,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.closeWirelessCommunication',
                         default: 'close wireless communication',
-                        description: 'microbit close wireless communication'
+                        description: 'spotpear close wireless communication'
                     }),
                     blockType: BlockType.COMMAND
                 },
@@ -912,7 +505,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.resetWirelessCommunication',
                         default: 'reset wireless communication',
-                        description: 'microbit reset wireless communication'
+                        description: 'spotpear reset wireless communication'
                     }),
                     blockType: BlockType.COMMAND
                 },
@@ -922,7 +515,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.sendWirelessMessage',
                         default: 'send wireless message [TEXT]',
-                        description: 'microbit send wireless message'
+                        description: 'spotpear send wireless message'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -937,7 +530,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.receiveWirelessMessage',
                         default: 'receive wireless message',
-                        description: 'microbit receive wireless message'
+                        description: 'spotpear receive wireless message'
                     }),
                     blockType: BlockType.REPORTER,
                     disableMonitor: true
@@ -947,7 +540,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.wireless.setWirelessCommunicationChannel',
                         default: 'set wireless communication channel as [CH]',
-                        description: 'microbit set wireless communication channel'
+                        description: 'spotpear set wireless communication channel'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
@@ -970,7 +563,7 @@ class OpenBlockSpotpearDevice {
             name: formatMessage({
                 id: 'spotpear.category.console',
                 default: 'Console',
-                description: 'The name of the microbit device console category'
+                description: 'The name of the spotpear device console category'
             }),
             color1: '#FF3399',
             color2: '#CC297A',
@@ -982,7 +575,7 @@ class OpenBlockSpotpearDevice {
                     text: formatMessage({
                         id: 'spotpear.console.consolePrint',
                         default: 'print [TEXT]',
-                        description: 'microbit console print'
+                        description: 'spotpear console print'
                     }),
                     blockType: BlockType.COMMAND,
                     arguments: {
