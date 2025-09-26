@@ -67,7 +67,9 @@ const builtinDevices = {
     spotpear: () => require('../devices/spotpear/spotpear'),
     // Microbit
     microbit: () => require('../devices/microbit/microbit'),
-    microbitV2: () => require('../devices/microbit/microbitV2')
+    microbitV2: () => require('../devices/microbit/microbitV2'),
+    // spotpear
+    spotpear: () => require('../devices/spotpear/spotpear')
 
     // TODO: transform these to device extension.
     // wedo2: () => require('../extensions/scratch3_wedo2'),
