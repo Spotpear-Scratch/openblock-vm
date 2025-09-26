@@ -206,6 +206,23 @@ class OpenBlockSpotpearDevice {
             }
         ];
     }
+    
+    get TOUCH_PINS_MENU () {
+        return [
+            {
+                text: 'P0',
+                value: Pins.P0
+            },
+            {
+                text: 'P1',
+                value: Pins.P1
+            },
+            {
+                text: 'P2',
+                value: Pins.P2
+            }
+        ];
+    }
 
     get CHANNEL_MENU () {
         const channel = [];
@@ -336,6 +353,9 @@ class OpenBlockSpotpearDevice {
                     acceptReporters: true,
                     items: this.LEVEL_MENU
                 },
+                touchPins: {
+                    items: this.TOUCH_PINS_MENU
+                }
             }
         },
         {
