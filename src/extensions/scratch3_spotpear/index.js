@@ -134,6 +134,14 @@ class spotpear {
     }
 
     /**
+     * @param {Uint8Array} matrix - the matrix to display.
+     * @return {Promise} - a Promise that resolves when writing to peripheral.
+     */
+    displayMatrix (matrix16x16) {
+        return this.send(BLECommand.CMD_DISPLAY_LED, matrix);
+    }
+
+    /**
      * @return {boolean} - the latest value received for the A button.
      */
     get buttonA () {

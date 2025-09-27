@@ -385,6 +385,21 @@ class OpenBlockSpotpearDevice {
                     }
                 },
                 {
+                    opcode: 'showImage16x16',
+                    text: formatMessage({
+                        id: 'spotpear.display.showImage16x16',
+                        default: 'show image [VALUE]',
+                        description: 'spotpear show image 16x16'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        VALUE: {
+                            type: ArgumentType.MATRIX16X16,
+                            defaultValue: '0101010101100010101000100010101010110001010100010001010101011000101010001000101010101100010101000100010101010110001010100010001010101011000101010001000101000100010101010110001010100010001010101011000101010001000101010101100010101000100010101010110001010100'
+                        }
+                    }
+                },
+                {
                     opcode: 'showImageUntil',
                     text: formatMessage({
                         id: 'spotpear.display.showImageUntil',
