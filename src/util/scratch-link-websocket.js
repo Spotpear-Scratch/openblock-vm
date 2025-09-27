@@ -155,7 +155,9 @@ class WebSerialUART {
         
         try {
             while (this.isReading && this.isConnected) {
+                console.log("UART: wait for input");
                 const { value, done } = await this.reader.read();
+                console.log("UART:"+value);
                 
                 if (done) {
                     break;
@@ -164,6 +166,8 @@ class WebSerialUART {
                 // Convert Uint8Array to string
                 const chunk = new TextDecoder().decode(value);
                 this.readBuffer += chunk;
+                console.log("UART:"+chunk);
+                console.log("UART:"+this.readBuffer);
                 
                 // Process complete lines
                 this.processBuffer();
@@ -195,6 +199,7 @@ class WebSerialUART {
         while ((lineEndIndex = this.findLineEnd()) !== -1) {
             // Extract complete line (without line ending)
             const line = this.readBuffer.substring(0, lineEndIndex);
+            console.log("LINE:"+line);
             
             // Remove processed data from buffer (including line ending)
             const nextLineStart = this.skipLineEnding(lineEndIndex);
@@ -202,6 +207,7 @@ class WebSerialUART {
             
             // Call onDataReady callback with complete line
             if (this.onDataReady && line.length > 0) {
+
                 this.onDataReady(line);
             }
         }
@@ -484,7 +490,40 @@ class ScratchLinkWebSocket {
                     parity: 'none'
                 });
 
-                if (this._onOpen) this._onOpen();
+                // Set up callbacks
+                this.wuart.onOpen = () => {
+                    console.log('LMP-DEBUG: Serial port opened, updating UI');
+
+                    // Confirm to app were open
+                    if (this._onOpen) this._onOpen();
+                };
+
+                this.wuart.onDisconnect = () => {
+                    console.log('LMP-DEBUG: Serial port disconnected');
+                    this.wuart.disconnect();
+
+                    // Update App
+                    this._onClose();
+                };
+
+                this.wuart.onClosed = () => {
+                    console.log('LMP-DEBUG: Serial port closed');
+                    this.wuart.disconnect();
+
+                    // Update App
+                    this._onClose();
+                };
+
+                // Connect to port
+                try {
+                    (async () => { 
+                        console.log("LMP-DEBUG: Attempting a connection..."); 
+                        const value = await this.wuart.connect(); 
+                    })();
+                } catch (error) {
+                    console.error('Serial port couldnt be connected to:', error);
+                }
+
              }catch (err) {
                 console.error('There was an error connecting to the serial port:', err);
                 throw new Error(`Unknown OpenblockLink art Type: ${this._type}`);
@@ -495,8 +534,34 @@ class ScratchLinkWebSocket {
         }
 
         if( this.wuart ) {
-            
-            this.wuart.onDataReady = this._handleMessage;
+            // NOTE: This should be state decode where we decide whatever it is the UART should be saying back, inc. uart stuffs
+            this.wuart.onDataReady = (line) => {
+                console.log('LMP-DEBUG: Received line:', line);
+
+                // FIXME: Should be a FIFO with timeouts on each one, because i assume we could be getting events everywhere
+                if( this._state === 'didDiscoverPeripheral' ) {
+                    // First response is probably the echo back, string check waiting for Spot...
+                    if( line.startsWith("Spot")) {
+                        setTimeout(() => {
+                            let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
+                            this._handleMessage(json2);
+                        }, 100);
+                        this._state = null;
+                    }
+                }
+
+                if( this._state === 'write' || this._state === null ) {
+                    // Send to the UI console
+                    setTimeout(() => {
+                        let uuencodedLine = btoa( line+"\n" );
+                        let json2 =  {"jsonrpc": "2.0", "method": "onMessage", "params":{"message":uuencodedLine}} ;
+                        this._handleMessage(json2);
+                    }, 100);
+                }
+
+                // this._handleMessage(_json);
+            };
+
         } else {
 
             if (this._onOpen && this._onClose && this._onError && this._handleMessage) {
@@ -512,8 +577,41 @@ class ScratchLinkWebSocket {
     }
 
     close () {
-        this._ws.close();
-        this._ws = null;
+
+        if( this.wuart ) {
+            console.log("LMP-DEBUG: Close UART requested.");
+
+            this.wuart.disconnect();
+        } else {
+            this._ws.close();
+            this._ws = null;
+        }
+    }
+
+    sendLineByLineEnded()
+    {
+        let json2 =  {"jsonrpc": "2.0", "method": "uploadSuccess", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
+        this._handleMessage(json2);
+    }
+
+    sendLineByLine( linesArray )
+    {
+        if (linesArray.length === 0) {
+            console.log("LMP-DEBUG: Sent whole program!");
+
+            // Flag completion
+            setTimeout(() => {
+                // Close the program, then send UART restart message && RPC "Soft Restarting Board"
+                this.wuart.writeLine( "f.close()\r\n" ).then( () => { this.sendLineByLineEnded(); } );
+            }, 100);
+
+            return;
+        }
+
+        // Wrap line
+        let fwriteLine = 'f.write( r"' + linesArray[0] + '" + "\\r\\n" )' +"\r\n" ;
+        console.log("LMP-DEBUG: Sending line:"+linesArray[0]);
+        this.wuart.writeLine( fwriteLine ).then( () => { linesArray.shift() ; this.sendLineByLine( linesArray ); } );        
     }
 
     sendMessage (message) {
@@ -522,6 +620,7 @@ class ScratchLinkWebSocket {
         console.log("LMP-Debug: sendMessage->"+messageText);
         
         if(typeof message.method === 'string' && message.method === 'discover') {
+            console.log("Discover message!")
             // json.method = true; // _handleRequest = moethod, _handleResponse=nope
 //            let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
 //            this._handleMessage(json);
@@ -534,15 +633,11 @@ class ScratchLinkWebSocket {
                         this._handleMessage(json);
             }, 500);
 
-            setTimeout(() => {
-                let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
-                this._handleMessage(json2);
-            }, 1000);
+            // Write to UART and obtain name; will report Micropyton name from machine.name
+            this._state = 'didDiscoverPeripheral';
+            (async () => { console.log("LMP-DEBUG: Writing board ident python!"); const value = await this.wuart.writeLine('import os ; print(os.uname().machine)\n\r\n'); console.log("write done!:", value);  })();
 
-            setTimeout(() => {
-                let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x001,"name": "EPS32C3-144","rssi": -70}} ;
-                this._handleMessage(json2);
-            }, 2000);
+            // Set timer, we reject the menu once we get something, timeout, they can reconnect and choose new one
 
         }
         debugger;
@@ -567,9 +662,15 @@ class ScratchLinkWebSocket {
             }, 500);
         }
 
+        // We are expecting a response from the UART; so anything we get we will throw it back
         if(typeof message.method === 'string' && message.method === 'write') {
             const decodedString = atob(message.params.message);
             console.log(decodedString);
+
+            this._state = 'write';
+
+            // Send the line to the UART
+            (async () => { console.log("LMP-DEBUG: Writing line to the uart"); const value = await this.wuart.writeLine(decodedString+'\n\r\n'); console.log("write done!:", value);  })();
 
             setTimeout(() => {
                         let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
@@ -582,16 +683,18 @@ class ScratchLinkWebSocket {
             const decodedString = atob(message.params.message);
             console.log(decodedString);
 
+            const linesArray = decodedString.split('\n');
+            
+
+            // Send program to be written to the flash as "main.py"
+            // insert initial file open.
+            const fopenLine = 'f = open("main.py","w")\r\n' ;
+            this.wuart.writeLine( fopenLine ).then( () => { this.sendLineByLine( linesArray ); } );
+
             setTimeout(() => {
                         let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
                         this._handleMessage(json);
-            }, 500);
-
-            setTimeout(() => {
-                let json2 =  {"jsonrpc": "2.0", "method": "uploadSuccess", "params":{"peripheralId":0x000,"name": "EV3","rssi": -70}} ;
-                this._handleMessage(json2);
-            }, 1000);
-
+            }, 100);
 
         }
 
@@ -612,14 +715,21 @@ class ScratchLinkWebSocket {
 
     setHandleMessage (fn) {
         console.log("LMP-Debug: setHandleMessage->"+fn);
+        debugger;
         this._handleMessage = fn;
     }
 
     isOpen () {
-        return this._ws && this._ws.readyState === this._ws.OPEN;
+        if( this.wuart )
+            return true;
+        else
+            return this._ws && this._ws.readyState === this._ws.OPEN;
     }
 
     _onMessage (e) {
+        console.log( "#################################### onMessage!");
+        debugger;
+
         const json = JSON.parse(e.data);
         this._handleMessage(json);
     }
