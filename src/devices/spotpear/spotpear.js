@@ -32,8 +32,8 @@ const DIVECE_OPT = {
 };
 
 const LedState = {
-    On: 'on',
-    Off: 'off'
+    On: '1',
+    Off: '0'
 };
 
 const Key = {
@@ -147,6 +147,31 @@ class OpenBlockSpotpearDevice {
         ];
     }
 
+    get TIMER_MENU () {
+        return [
+            {
+                text: 'A',
+                value: '1'
+            },
+            {
+                text: 'B',
+                value: '2'
+            },
+            {
+                text: 'C',
+                value: '3'
+            },
+            {
+                text: 'D',
+                value: '4'
+            },
+            {
+                text: 'E',
+                value: '5'
+            },
+        ];
+    }
+
     get KEYS_MENU () {
         return [
             {
@@ -235,6 +260,23 @@ class OpenBlockSpotpearDevice {
                 });
         }
         return channel;
+    }
+
+    get FONTSIZE_MENU () {
+        return [
+            {
+                text: '14',
+                value: '14'
+            },
+            {
+                text: '16',
+                value: '16'
+            },
+            {
+                text: '24',
+                value: '24'
+            }
+        ];
     }
 
     /**
@@ -359,6 +401,46 @@ class OpenBlockSpotpearDevice {
             }
         },
         {
+            id: 'timer',
+            name: formatMessage({
+                id: 'spotpear.category.timer',
+                default: 'Timer',
+                description: 'The name of the spotpear device timer category'
+            }),
+            color1: '#FF3399',
+            color2: '#C8299A',
+            color3: '#C8299A',
+
+            blocks: [
+                {
+                    opcode: 'setTimer',
+                    text: formatMessage({
+                        id: 'spotpear.timer.setTimer',
+                        default: 'set timer [TIMER] to [VALUE] milliseconds',
+                        description: 'spotpear timer configuration'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        TIMER: {
+                            type: ArgumentType.NUMBER,
+                            menu: 'timer',
+                            defaultValue: 'A'
+                        },
+                        VALUE: {
+                            type: ArgumentType.POSITIVE_NUMBER,
+                            defaultValue: '5000'
+                        }
+                    }
+                }
+            ],
+            menus: {
+                timer: {
+                    acceptReporters: true,
+                    items: this.TIMER_MENU
+                },
+            }
+        },
+        {
             id: 'display',
             name: formatMessage({
                 id: 'spotpear.category.display',
@@ -369,6 +451,134 @@ class OpenBlockSpotpearDevice {
             color2: '#774DCB',
             color3: '#774DCB',
             blocks: [
+                {
+                    opcode: 'setLED',
+                    text: formatMessage({
+                        id: 'spotpear.display.setLED',
+                        default: 'set LED [STATE]',
+                        description: 'spotpear set LED'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        STATE: {
+                            type: ArgumentType.NUMBER,
+                            menu: 'ledStatus',
+                            defaultValue: LedState.On,
+                        },
+                    }
+                },
+                {
+                    opcode: 'drawPixel',
+                    text: formatMessage({
+                        id: 'spotpear.display.drawPixel',
+                        default: 'draw pixel at x:[X]y:[Y] in [COLOR]',
+                        description: 'spotpear draw pixel'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        X: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        Y: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        },
+                    }
+                },
+                {
+                    opcode: 'drawLine',
+                    text: formatMessage({
+                        id: 'spotpear.display.drawLine',
+                        default: 'draw line starting at x1:[X1]y1:[Y1] going to x2:[X2]y2:[Y2] in [COLOR] and [WIDTH] thickness',
+                        description: 'spotpear draw line'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        X1: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        Y1: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        X2: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '50'
+                        },
+                        Y2: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '50'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        },
+                        WIDTH: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '1'
+                        }
+                    }
+                },
+                {
+                    opcode: 'drawCircle',
+                    text: formatMessage({
+                        id: 'spotpear.display.drawCircle',
+                        default: 'draw circle starting at x:[X]y:[Y] with radius:[RADIUS] in [COLOR]',
+                        description: 'spotpear draw circle'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        X: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        Y: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        RADIUS: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '8'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        },
+                    }
+                },
+                {
+                    opcode: 'drawRectangle',
+                    text: formatMessage({
+                        id: 'spotpear.display.drawRectangle',
+                        default: 'draw rectangle starting at x:[X]y:[Y] with width:[WIDTH] and height:[HEIGHT] in [COLOR]',
+                        description: 'spotpear draw rectangle'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        X: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        Y: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        WIDTH: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        HEIGHT: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        },
+                    }
+                },
                 {
                     opcode: 'showImage',
                     text: formatMessage({
@@ -422,7 +632,7 @@ class OpenBlockSpotpearDevice {
                     opcode: 'show',
                     text: formatMessage({
                         id: 'spotpear.display.show',
-                        default: 'show [TEXT]',
+                        default: 'show [TEXT] at x:[X]y:[Y] in [COLOR] with size [SIZE]',
                         description: 'spotpear show'
                     }),
                     blockType: BlockType.COMMAND,
@@ -430,21 +640,22 @@ class OpenBlockSpotpearDevice {
                         TEXT: {
                             type: ArgumentType.STRING,
                             defaultValue: 'Hello OpenBlock'
-                        }
-                    }
-                },
-                {
-                    opcode: 'showUntilScrollDone',
-                    text: formatMessage({
-                        id: 'spotpear.display.showUntilScrollDone',
-                        default: 'show [TEXT] until scroll done',
-                        description: 'spotpear show until scroll done'
-                    }),
-                    blockType: BlockType.COMMAND,
-                    arguments: {
-                        TEXT: {
-                            type: ArgumentType.STRING,
-                            defaultValue: 'Hello OpenBlock'
+                        },
+                        X: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        Y: {
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '10'
+                        },
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        },
+                        SIZE: {
+                            type: ArgumentType.NUMBER,
+                            menu: 'fontSize',
+                            defaultValue: '14'
                         }
                     }
                 },
@@ -458,16 +669,28 @@ class OpenBlockSpotpearDevice {
                     }),
                     blockType: BlockType.COMMAND
                 },
-                '---',
+                {
+                    opcode: 'setBackgroundColor',
+                    text: formatMessage({
+                        id: 'spotpear.display.setBackgroundColor',
+                        default: 'set background to [COLOR]',
+                        description: 'spotpear set background color'
+                    }),
+                    blockType: BlockType.COMMAND,
+                    arguments: {
+                        COLOR: {
+                            type: ArgumentType.COLOR,
+                        }
+                    }
+                },
             ],
             menus: {
-                ledState: {
+                ledStatus: {
                     items: this.LEDSTATE_MENU
                 },
-                ledBrightness: {
-                    acceptReporters: true,
-                    items: this.LEDBRT_MENU
-                }
+                fontSize: {
+                    items: this.FONTSIZE_MENU
+                },
             }
         },
         {
