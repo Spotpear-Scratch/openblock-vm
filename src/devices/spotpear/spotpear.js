@@ -610,25 +610,6 @@ class OpenBlockSpotpearDevice {
                     }
                 },
                 {
-                    opcode: 'showImageUntil',
-                    text: formatMessage({
-                        id: 'spotpear.display.showImageUntil',
-                        default: 'show image [VALUE] for [TIME] secs',
-                        description: 'spotpear show image for some times'
-                    }),
-                    blockType: BlockType.COMMAND,
-                    arguments: {
-                        VALUE: {
-                            type: ArgumentType.MATRIX,
-                            defaultValue: '0101010101100010101000100'
-                        },
-                        TIME: {
-                            type: ArgumentType.NUMBER,
-                            defaultValue: '1'
-                        }
-                    }
-                },
-                {
                     opcode: 'show',
                     text: formatMessage({
                         id: 'spotpear.display.show',
