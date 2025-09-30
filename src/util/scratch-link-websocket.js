@@ -388,7 +388,7 @@ class SerialPortManager {
     async removeConnection(id) {
         const connection = this.connections.get(id);
         if (connection) {
-            await connection.disconnect();
+            await connection.disconnect()
             this.connections.delete(id);
         }
     }
@@ -500,7 +500,7 @@ class ScratchLinkWebSocket {
 
                 this.wuart.onDisconnect = () => {
                     console.log('LMP-DEBUG: Serial port disconnected');
-                    this.wuart.disconnect();
+                    this.wuart.disconnect().then( () => { console.log('LMP-DEBUG: Serial port disconnected and closed'); } );
 
                     // Update App
                     this._onClose();
@@ -508,7 +508,7 @@ class ScratchLinkWebSocket {
 
                 this.wuart.onClosed = () => {
                     console.log('LMP-DEBUG: Serial port closed');
-                    this.wuart.disconnect();
+                    this.wuart.disconnect().then( () => { console.log('LMP-DEBUG: Serial port disconnected and closed'); } );
 
                     // Update App
                     this._onClose();
@@ -581,7 +581,7 @@ class ScratchLinkWebSocket {
         if( this.wuart ) {
             console.log("LMP-DEBUG: Close UART requested.");
 
-            this.wuart.disconnect();
+            this.wuart.disconnect().then( () => { console.log('LMP-DEBUG: Serial port disconnected and closed'); } );
         } else {
             this._ws.close();
             this._ws = null;
@@ -602,7 +602,10 @@ class ScratchLinkWebSocket {
             // Flag completion
             setTimeout(() => {
                 // Close the program, then send UART restart message && RPC "Soft Restarting Board"
-                this.wuart.writeLine( "f.close()\r\n" ).then( () => { this.sendLineByLineEnded(); } );
+                this.wuart.writeLine( "f.close()\r\n" ).then( () => { 
+                    // Send CTRL-D to restart board
+                    this.wuart.writeLine( "\x04" ).then( () => { this.sendLineByLineEnded(); } );
+                });
             }, 100);
 
             return;
@@ -635,7 +638,11 @@ class ScratchLinkWebSocket {
 
             // Write to UART and obtain name; will report Micropyton name from machine.name
             this._state = 'didDiscoverPeripheral';
-            (async () => { console.log("LMP-DEBUG: Writing board ident python!"); const value = await this.wuart.writeLine('import os ; print(os.uname().machine)\n\r\n'); console.log("write done!:", value);  })();
+            (async () => { 
+                console.log("LMP-DEBUG: Writing board ident python!"); 
+                const value = await this.wuart.writeLine('\x03import os ; print(os.uname().machine)\n\r\n'); 
+                console.log("LMP-DEBUG: Write ident done!:", value);
+            })();
 
             // Set timer, we reject the menu once we get something, timeout, they can reconnect and choose new one
 
