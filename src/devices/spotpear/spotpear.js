@@ -664,6 +664,30 @@ class OpenBlockSpotpearDevice {
                         }
                     }
                 },
+                '---',
+                {
+                    opcode: 'rgb',
+                    text: formatMessage({
+                        id: 'spotpear.display.rgb',
+                        default: 'r[RED] g[GREEN] b[BLUE] to hex',
+                        description: 'convert rgb value to hex'
+                    }),
+                    blockType: BlockType.REPORTER,
+                    arguments: {
+                        RED: {
+                            type: ArgumentType.UINT8_NUMBER,
+                            defaultValue: 128
+                        },
+                        GREEN: {
+                            type: ArgumentType.UINT8_NUMBER,
+                            defaultValue: 128
+                        },
+                        BLUE: {
+                            type: ArgumentType.UINT8_NUMBER,
+                            defaultValue: 128
+                        },
+                    }
+                }
             ],
             menus: {
                 ledStatus: {
