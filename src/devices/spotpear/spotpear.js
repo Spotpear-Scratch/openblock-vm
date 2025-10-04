@@ -50,6 +50,14 @@ const Pins = {
     P5: '5',
 };
 
+const Timers = {
+    A: '1',
+    B: '2',
+    C: '3',
+    D: '4',
+    E: '5',
+};
+
 const Level = {
     High: '1',
     Low: '0'
@@ -151,24 +159,24 @@ class OpenBlockSpotpearDevice {
         return [
             {
                 text: 'A',
-                value: '1'
+                value: Timers.A
             },
             {
                 text: 'B',
-                value: '2'
+                value: Timers.B
             },
             {
                 text: 'C',
-                value: '3'
+                value: Timers.C
             },
             {
                 text: 'D',
-                value: '4'
+                value: Timers.D
             },
             {
                 text: 'E',
-                value: '5'
-            },
+                value: Timers.E
+            }
         ];
     }
 
@@ -403,8 +411,8 @@ class OpenBlockSpotpearDevice {
         {
             id: 'timer',
             name: formatMessage({
-                id: 'spotpear.category.timer',
-                default: 'Timer',
+                id: 'spotpear.category.timers',
+                default: 'Timers',
                 description: 'The name of the spotpear device timer category'
             }),
             color1: '#FF3399',
@@ -422,20 +430,20 @@ class OpenBlockSpotpearDevice {
                     blockType: BlockType.COMMAND,
                     arguments: {
                         TIMER: {
-                            type: ArgumentType.NUMBER,
-                            menu: 'timer',
-                            defaultValue: 'A'
+                            type: ArgumentType.STRING,
+                            menu: 'timers',
+                            defaultValue: Timers.A,
                         },
                         VALUE: {
-                            type: ArgumentType.POSITIVE_NUMBER,
-                            defaultValue: '5000'
-                        }
+                            type: ArgumentType.NUMBER,
+                            defaultValue: '1023'
+                        },
                     }
                 }
             ],
             menus: {
-                timer: {
-                    acceptReporters: true,
+                timers: {
+                    // acceptReporters: true,
                     items: this.TIMER_MENU
                 },
             }
