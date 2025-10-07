@@ -247,6 +247,15 @@ class Serialport extends JSONRPC {
             this._runtime.emit(
                 this._runtime.constructor.PERIPHERAL_UPLOAD_SUCCESS, params ? params.aborted : false);
             break;
+        case 'uploadFirmware':
+            console.log("LMP-Debug: uploadFirmware did-recieve-call event!");
+            break;
+        // FIXME-LMP: quick hack to get message from serialport to VM to GUI; should put into runtime
+        case 'firmwareUpdateRequired':
+            this._runtime.emit('REQUIRES_FIRMWARE_UPDATE', { message: "hello there" });
+            console.log("LMP-Debug: MEOW!");
+            break;
+
         case 'ping':
             return 42;
         }

@@ -511,6 +511,27 @@ try {
     console.error('Connection failed:', error);
 }
 */
+const { ESPLoader, FlashOptions, LoaderOptions, Transport } = require("esptool-js/lib/index.js");
+const CryptoJS = require('crypto-js'); // CommonJS
+
+
+
+// Our firmware
+const binarySpotpearFirmwareFileA = require('../spotpear_micropython_bl.firmware');
+const binarySpotpearFirmwareFileB = require('../spotpear_micropython_mp.firmware');
+const binarySpotpearFirmwareFileC = require('../spotpear_micropython_pt.firmware');
+
+
+// Function to convert a Base64 string to a Uint8Array
+function base64ToUint8Array(base64) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
 
 class ScratchLinkWebSocket {
     constructor (type) {
@@ -602,6 +623,51 @@ class ScratchLinkWebSocket {
                             let json2 =  {"jsonrpc": "2.0", "method": "didDiscoverPeripheral", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
                             this._handleMessage(json2);
                         }, 100);
+
+                        // Find version from firmware
+                        console.log("LMP-DEBUG: Finding version from firmware...");
+
+                        // Decode base64 to ASCII
+                        const base64Content = binarySpotpearFirmwareFileB.default.split(',')[1];
+                        const decoded = Buffer.from(base64Content, 'base64').toString('ascii');
+
+                        // Regex pattern to match and extract version
+                        const regex = /Machine\s+: Spotpear.*? \(version ([^)]+)\).*?/;
+
+                        // Search and extract
+                        const match = decoded.match(regex);
+
+                        if (match) {
+                            const fwversion = match[1];
+                            console.log("Tag found version:", fwversion);
+                        } else {
+                            console.log("Tag found no fw version.");
+                        }
+
+                        const regex2 = /Spotpear.*? \(version ([^)]+)\).*?/;
+                        const match2 = line.match(regex2);
+                        if (match2) {
+                            const hwversion = match2[1];
+                            console.log("LMP-DEBUG: Found version:", hwversion);
+                        } else {
+                            console.log("LMP-DEBUG: Found no hw version.");
+                        }
+                        
+
+                        setTimeout(() => {
+                            let json2 =  {"jsonrpc": "2.0", "method": "firmwareUpdateRequired", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
+                            this._handleMessage(json2);
+                        }, 200);
+
+                        // We should display a toast here requesting a firmware update if versions mismatch
+                        if( match && match2 && (match[1] !== match2[1]) ) {
+                            console.log("LMP-DEBUG: Version mismatch, should update firmware!");
+                            setTimeout(() => {
+                                let json2 =  {"jsonrpc": "2.0", "method": "showFirmwareUpdateToast", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
+                                this._handleMessage(json2);
+                            }, 100);
+                        }
+
                         this._state = null;
                     }
                 }
@@ -672,6 +738,72 @@ class ScratchLinkWebSocket {
         console.log("LMP-DEBUG: Sending line:"+linesArray[0]);
         this.wuart.writeLine( fwriteLine ).then( () => { linesArray.shift() ; this.sendLineByLine( linesArray ); } );        
     }
+
+    // Handle incoming websocket messages
+    sendMsgFirmwareUploadDialog( message ) 
+    {
+        setTimeout(() => {
+            
+            let json2 =  {"jsonrpc": "2.0", "method": "uploadStdout", "params":{"message": message}} ;
+            this._handleMessage(json2);
+        }, 100);
+    }
+
+    // Flash to ESP
+    async ESPFlashFirmware( esploader, _URLData, _URLOffset ) {
+        console.log("LMP-DEBUG: ESPFlashFirmware called...");
+
+        try {
+            // Starting address
+            const offset = _URLOffset;
+
+            // Extract the Base64 part of the data URL
+            const base64Content = _URLData.default.split(',')[1];
+
+            // Convert the Base64 string to a Uint8Array
+            //const uint8Array = base64ToUint8Array(base64Content);
+            const uint8Array = atob(base64Content);
+
+            //const decoder = new TextDecoder('utf-8'); // Specify the encoding, e.g., 'utf-8'
+            //const str = decoder.decode(uint8Array);
+
+            const fileArray = [];
+            fileArray.push({ data: uint8Array, address: offset });
+
+            // Not working according to the guys
+            //const flashId = await esploader.flash_id();
+
+            // 5. The flashId contains the manufacturer and chip info, including flash size
+            // For older chips, you might need to map the ID to a known size.
+            // For newer chips, esptool-js may provide a function to get it directly.
+            // A more modern approach is to call the `chip_info()` method.
+            // const chipInfo = await espLoader.chip_info();
+            // const flashSize = chipInfo.flashSize;
+            // console.log(`Flash ID: ${flashId.toString(16)}, Flash Size: ${flashSize} bytes`);
+
+            const flashOptions = { // : FlashOptions = {
+                fileArray: fileArray,
+                flashSize: "16MB",
+                flashMode: "",
+                flashFreq: "40m",
+                eraseAll: false,
+                compress: true,
+                reportProgress: (fileIndex, written, total) => {
+                        this.sendMsgFirmwareUploadDialog( "Written ... " + Math.round((written / total) * 100) + "%\n");
+                    },
+                calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
+            } ; // as FlashOptions;
+            await esploader.writeFlash(flashOptions);
+            await esploader.after();
+        } catch (e) {
+            console.error(e);
+            this.sendMsgFirmwareUploadDialog( "Failed for reason: " + e.message + "\n");
+        } finally {
+            this.sendMsgFirmwareUploadDialog( "Finished writing new control software to the device\n");
+        }
+
+    }
+
 
     sendMessage (message) {
         const messageText = JSON.stringify(message);
@@ -758,9 +890,72 @@ class ScratchLinkWebSocket {
                         let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
                         this._handleMessage(json);
             }, 100);
-
         }
 
+        // Upload program to the board over uart
+        if(typeof message.method === 'string' && message.method === 'uploadFirmware') {
+
+            console.log("LMP-DEBUG: Upload Firmware starts here....");
+
+            var dontLoad = true;
+            if (dontLoad) {
+                (async () => {
+                    if( this.wuart.reader ) {
+                        this.wuart.reader.releaseLock();            
+                    }
+                    if( this.wuart.writer ) {
+                        this.wuart.writer.releaseLock();
+                    }
+                    if( this.wuart.port ) {
+                        await this.wuart.port.close();
+                    } else {
+                        console.log("No port to close, opening fresh one...");
+
+                        // Request port from user
+                        this.wuart.port = await navigator.serial.requestPort();
+                        
+
+                    }
+
+                    console.log("Transport for esp loader...");
+                    var transport = new Transport(this.wuart.port, true);
+                    console.log("Flashoptions for esp loader...");
+                    const flashOptions = {
+                        transport,
+                        baudrate: parseInt(921600),
+                        terminal: espLoaderTerminal,
+                        debugLogging: true,
+                    } ;
+                    console.log("esploader for esp loader...");
+                    var esploader = new ESPLoader(flashOptions);
+                    console.log("main exec for esp loader...");
+                    var chip = await esploader.main();
+                    console.log("Settings done for :" + chip);
+
+                    this.sendMsgFirmwareUploadDialog( "Flashing the bootloader...\n");
+                    await this.ESPFlashFirmware( esploader, binarySpotpearFirmwareFileA, 0x0 );
+
+                    this.sendMsgFirmwareUploadDialog( "Flashing the micropython runtime...\n");
+                    await this.ESPFlashFirmware( esploader, binarySpotpearFirmwareFileB, 0x10000 );
+
+                    this.sendMsgFirmwareUploadDialog( "Flashing the partition table for vfs...\n");
+                    await this.ESPFlashFirmware( esploader, binarySpotpearFirmwareFileC, 0x8000 );
+
+                    this.sendMsgFirmwareUploadDialog( "Restart the browser, and unplug and replug the device <3");
+                })();
+            }
+            // this.wuart.writeLine( fopenLine ).then( () => { this.sendLineByLine( linesArray ); } );
+            debugger;
+
+
+
+
+            setTimeout(() => {
+                        let json =  {"jsonrpc": "2.0", "id": message.id, "result":null} ;           
+                        this._handleMessage(json);
+            }, 100);
+
+        }
 
     }
 

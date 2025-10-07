@@ -16,7 +16,24 @@ const base = {
         filename: '[name].js'
     },
     module: {
-        rules: [{
+        rules: [
+        {
+            test: /\.firmware$/,
+              enforce: 'pre',
+            use: [
+            {
+                loader: 'url-loader',
+                options: {
+                // The limit option tells url-loader to only use Base64
+                // if the file is smaller than this limit (in bytes).
+                // Setting it very high ensures the file is always inlined.
+                limit: Infinity,
+                },
+            },
+            ],            
+        },
+
+        {
             test: /\.js$/,
             loader: 'babel-loader',
             include: path.resolve(__dirname, 'src'),
