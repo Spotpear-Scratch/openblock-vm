@@ -21,6 +21,19 @@
 //import { ReadlineParser } from '@serialport/parser-readline';
 
 
+const { serial } = require("web-serial-polyfill");
+
+const espLoaderTerminal = {
+  clean: function () {
+    console.log("clean");
+  },
+  writeLine: function (data) {
+    console.log(data);
+  },
+  write: function (data) {
+    console.log(data);
+  },
+};
 /**
  * Web Serial UART Handler Class
  * Provides interface for serial communication with callbacks and line buffering
@@ -57,7 +70,15 @@ class WebSerialUART {
      * Check if Web Serial API is supported
      */
     static isSupported() {
-        return 'serial' in navigator;
+        // Serial API is supported in secure contexts (HTTPS) and in some browsers
+        if ('serial' in navigator) {
+            return true;
+
+        }
+        // USB API is supported in secure contexts (HTTPS) and in some browsers; use web-polyfill (Android)
+        if ( 'usb' in navigator ) {
+            return true;
+        }
     }
     
     /**
@@ -68,9 +89,44 @@ class WebSerialUART {
             if (!WebSerialUART.isSupported()) {
                 throw new Error('Web Serial API not supported');
             }
+
+            var isAndroid = /Android/i.test(navigator.userAgent);
             
+            const data = await navigator.userAgentData.getHighEntropyValues(['platform']);
+            var serialLib;
+
+            // Android only has the polyfill
+            if (isAndroid) {
+                serialLib = serial;
+
+            // Android but in desktop mode; only has polyfill
+            } else if ((data.platform === "Linux") && !('hid' in navigator)) {
+                serialLib = serial;
+            
+            // Desktop, prefer native if available
+            } else if ('serial' in navigator) {
+                serialLib = navigator.serial;
+
+            // Fallback to polyfill if USB is available
+            } else if ('usb' in navigator) {
+                serialLib = serial;
+
+            } else {
+                alert("UART=" + (serialLib === navigator.serial ? "native" : "polyfill"));
+                alert("UART=" + navigator.platform);
+                alert("UART=" + navigator.userAgent);
+                alert("UART=" + data.platform);
+                alert("UART=" + ( ('hid' in navigator)? "HID" : "no HID"))   ;
+                alert("UART=" + ('bluetooth' in navigator ? "Bluetooth" : "no Bluetooth"))   ;
+                alert("UART=" + ('usb' in navigator ? "USB" : "no USB"))   ;
+                alert("UART=" + ('serial' in navigator ? "Serial" : "no Serial"))   ;
+                serialLib = serial;
+            }
+            // alert("UART=" + (serialLib === navigator.serial ? "native" : "polyfill"));
+
             // Request port from user
-            this.port = await navigator.serial.requestPort();
+            // this.port = await navigator.serial.requestPort();
+            this.port = await serialLib.requestPort();
             
             // Open the port with specified options
             await this.port.open({
@@ -639,9 +695,9 @@ class ScratchLinkWebSocket {
             // Write to UART and obtain name; will report Micropyton name from machine.name
             this._state = 'didDiscoverPeripheral';
             (async () => { 
-                console.log("LMP-DEBUG: Writing board ident python!"); 
+                console.log("LMP-DEBUG: Writing board ident python request!"); 
                 const value = await this.wuart.writeLine('\x03import os ; print(os.uname().machine)\n\r\n'); 
-                console.log("LMP-DEBUG: Write ident done!:", value);
+                console.log("LMP-DEBUG: Write ident done, waiting delayed response event!");
             })();
 
             // Set timer, we reject the menu once we get something, timeout, they can reconnect and choose new one
