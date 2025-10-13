@@ -511,6 +511,7 @@ try {
     console.error('Connection failed:', error);
 }
 */
+//import { ESPLoader, FlashOptions, LoaderOptions, Transport } from "esptool-js/lib/index.js";
 const { ESPLoader, FlashOptions, LoaderOptions, Transport } = require("esptool-js/lib/index.js");
 const CryptoJS = require('crypto-js'); // CommonJS
 
@@ -534,6 +535,7 @@ function base64ToUint8Array(base64) {
 }
 
 class ScratchLinkWebSocket {
+    
     constructor (type) {
         this._type = type;
         this._onOpen = null;
@@ -653,19 +655,19 @@ class ScratchLinkWebSocket {
                             console.log("LMP-DEBUG: Found no hw version.");
                         }
                         
-
-                        setTimeout(() => {
-                            let json2 =  {"jsonrpc": "2.0", "method": "firmwareUpdateRequired", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
-                            this._handleMessage(json2);
-                        }, 200);
-
                         // We should display a toast here requesting a firmware update if versions mismatch
                         if( match && match2 && (match[1] !== match2[1]) ) {
                             console.log("LMP-DEBUG: Version mismatch, should update firmware!");
+
                             setTimeout(() => {
                                 let json2 =  {"jsonrpc": "2.0", "method": "showFirmwareUpdateToast", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
                                 this._handleMessage(json2);
                             }, 100);
+
+                            setTimeout(() => {
+                                let json2 =  {"jsonrpc": "2.0", "method": "firmwareUpdateRequired", "params":{"peripheralId":0x001,"name": line,"rssi": -70}} ;
+                                this._handleMessage(json2);
+                            }, 200);
                         }
 
                         this._state = null;
@@ -680,6 +682,8 @@ class ScratchLinkWebSocket {
                         this._handleMessage(json2);
                     }, 100);
                 }
+
+
 
                 // this._handleMessage(_json);
             };
